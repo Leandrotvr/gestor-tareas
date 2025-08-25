@@ -1,0 +1,15 @@
+﻿services:
+  - type: web
+    name: gestor-tareas-api
+    env: node
+    rootDir: backend
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 4000
