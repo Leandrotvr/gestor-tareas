@@ -1,0 +1,20 @@
+﻿# Node
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Builds
+frontend/dist/
+server-run.log
+
+# Entorno / secretos
+.env
+frontend/.env*
+backend/.env
+
+# DB local
+backend/database.db
+
+# Varias
+.DS_Store
+Thumbs.db
