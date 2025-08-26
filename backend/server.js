@@ -1,4 +1,5 @@
-﻿require("dotenv").config();
+﻿const cors = require('cors');
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -6,7 +7,22 @@ const jwt = require("jsonwebtoken");
 const db = require("./db");
 
 const app = express();
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://localhost:5173',
+  /\.vercel\.app$/
+];
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // CLI/Postman/SSR
+    const ok = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+    return ok ? cb(null, true) : cb(new Error('CORS bloqueado: ' + origin));
+  },
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev";
@@ -127,3 +143,4 @@ app.delete("/api/tasks/:id", auth, (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`API en http://localhost:${PORT}`));
+
