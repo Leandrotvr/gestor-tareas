@@ -1,7 +1,8 @@
 ﻿import React, { useState } from "react";
 
-// Usa la var de Vercel si existe; sino, la de Render
-const API = import.meta?.env?.VITE_API_URL || "https://gestor-tareas-api-ra7s.onrender.com/api";
+// Normaliza la URL base del API (quita espacios/saltos/barras finales)
+const RAW_API = (import.meta?.env?.VITE_API_URL ?? "https://gestor-tareas-api-ra7s.onrender.com/api");
+const API = "https://gestor-tareas-api-ra7s.onrender.com/api"; console.log("API =", API);
 
 export default function App() {
   const [tab, setTab] = useState("login"); // "login" | "register"
@@ -91,3 +92,4 @@ function Login() {
     </form>
   );
 }
+
