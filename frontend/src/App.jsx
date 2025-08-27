@@ -1,135 +1,93 @@
-﻿import { useEffect, useState } from "react";
+﻿import React, { useState } from "react";
 
-const API = "http://localhost:4000/api";
+// Usa la var de Vercel si existe; sino, la de Render
+const API = import.meta?.env?.VITE_API_URL || "https://gestor-tareas-api-ra7s.onrender.com/api";
 
-function Login({ onLogin, switchToRegister }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  async function submit(e) {
-    e.preventDefault();
-    if (!email.includes("@") || password.length < 6) return alert("Datos inválidos");
-    const res = await fetch(`${API}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Error");
-    onLogin(data.token);
-  }
+export default function App() {
+  const [tab, setTab] = useState("login"); // "login" | "register"
   return (
-    <form onSubmit={submit} style={{maxWidth:420, margin:"40px auto"}}>
-      <h2>Entrar</h2>
-      <input placeholder="email" value={email} onChange={e=>setEmail(e.target.value)} />
-      <input placeholder="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-      <button>Login</button>
-      <p>¿Sin cuenta? <button type="button" onClick={switchToRegister}>Registrate</button></p>
-      <style>{`input,button{display:block;width:100%;padding:10px;margin:8px 0}`}</style>
-    </form>
-  );
-}
-
-function Register({ onLogin, switchToLogin }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  async function submit(e) {
-    e.preventDefault();
-    if (!name.trim() || !email.includes("@") || password.length < 6) return alert("Datos inválidos");
-    const res = await fetch(`${API}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Error");
-    onLogin(data.token);
-  }
-  return (
-    <form onSubmit={submit} style={{maxWidth:420, margin:"40px auto"}}>
-      <h2>Registrarse</h2>
-      <input placeholder="nombre" value={name} onChange={e=>setName(e.target.value)} />
-      <input placeholder="email" value={email} onChange={e=>setEmail(e.target.value)} />
-      <input placeholder="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-      <button>Crear cuenta</button>
-      <p>¿Ya tenés cuenta? <button type="button" onClick={switchToLogin}>Ir a Login</button></p>
-      <style>{`input,button{display:block;width:100%;padding:10px;margin:8px 0}`}</style>
-    </form>
-  );
-}
-
-function Tasks({ token, onLogout }) {
-  const [tasks, setTasks] = useState([]);
-  const [title, setTitle] = useState("");
-
-  async function load() {
-    const res = await fetch(`${API}/tasks`, { headers: { Authorization: `Bearer ${token}` }});
-    if (res.status === 401) return onLogout();
-    const data = await res.json();
-    setTasks(data);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function addTask(e) {
-    e.preventDefault();
-    if (!title.trim()) return;
-    const res = await fetch(`${API}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title })
-    });
-    const data = await res.json();
-    if (res.ok) { setTasks([data, ...tasks]); setTitle(""); }
-  }
-
-  async function toggle(t) {
-    const res = await fetch(`${API}/tasks/${t.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ done: !t.done })
-    });
-    const data = await res.json();
-    if (res.ok) setTasks(tasks.map(x => x.id === t.id ? data : x));
-  }
-
-  async function remove(id) {
-    const res = await fetch(`${API}/tasks/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) setTasks(tasks.filter(x => x.id !== id));
-  }
-
-  return (
-    <div style={{maxWidth:520, margin:"40px auto"}}>
-      <h2>Tareas</h2>
-      <form onSubmit={addTask}>
-        <input placeholder="Nueva tarea..." value={title} onChange={e=>setTitle(e.target.value)} />
-        <button>Agregar</button>
-      </form>
-      <ul>
-        {tasks.map(t => (
-          <li key={t.id} style={{display:"flex",gap:10,alignItems:"center",margin:"8px 0"}}>
-            <input type="checkbox" checked={t.done} onChange={()=>toggle(t)} />
-            <span style={{textDecoration: t.done ? "line-through" : "none"}}>{t.title}</span>
-            <button onClick={()=>remove(t.id)}>Borrar</button>
-          </li>
-        ))}
-      </ul>
-      <button onClick={onLogout}>Salir</button>
-      <style>{`input,button{padding:10px;margin:6px 0}`}</style>
+    <div style={{minHeight:"100vh", background:"#111", color:"#eee", display:"grid", placeItems:"start", padding:"24px"}}>
+      <div style={{width:360}}>
+        <div style={{display:"flex", gap:8, marginBottom:16}}>
+          <button onClick={()=>setTab("login")}>Ir a Login</button>
+          <button onClick={()=>setTab("register")}>Ir a Registro</button>
+        </div>
+        {tab === "login" ? <Login/> : <Register/>}
+      </div>
     </div>
   );
 }
 
-export default function App() {
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [view, setView] = useState(token ? "tasks" : "login");
+function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function onLogin(tk){ localStorage.setItem("token", tk); setToken(tk); setView("tasks"); }
-  function onLogout(){ localStorage.removeItem("token"); setToken(""); setView("login"); }
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      const { token } = await res.json();
+      localStorage.setItem("token", token);
+      alert("Registro ok");
+      location.href = "/";
+    } catch (err) {
+      alert("Error al registrar: " + (err?.message ?? String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (view === "register") return <Register onLogin={onLogin} switchToLogin={()=>setView("login")} />;
-  if (view === "login") return <Login onLogin={onLogin} switchToRegister={()=>setView("register")} />;
-  return <Tasks token={token} onLogout={onLogout} />;
+  return (
+    <form onSubmit={onSubmit} style={{display:"grid", gap:12}}>
+      <h2>Registrarse</h2>
+      <input placeholder="Nombre" value={name} onChange={(e)=>setName(e.target.value)} />
+      <input placeholder="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
+      <input type="password" placeholder="contraseña" value={password} onChange={(e)=>setPassword(e.target.value)} />
+      <button type="submit" disabled={loading}>{loading ? "Creando..." : "Crear cuenta"}</button>
+    </form>
+  );
+}
+
+function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      const { token } = await res.json();
+      localStorage.setItem("token", token);
+      alert("Login ok");
+      location.href = "/";
+    } catch (err) {
+      alert("Error al entrar: " + (err?.message ?? String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} style={{display:"grid", gap:12}}>
+      <h2>Entrar</h2>
+      <input placeholder="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
+      <input type="password" placeholder="contraseña" value={password} onChange={(e)=>setPassword(e.target.value)} />
+      <button type="submit" disabled={loading}>{loading ? "Entrando..." : "Login"}</button>
+    </form>
+  );
 }
